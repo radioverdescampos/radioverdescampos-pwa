@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Verdes Campos • Rádio Ao Vivo</title>
+  <meta name="theme-color" content="#0b0f0e"/>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" sizes="192x192" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <style>
+    :root{
+      --primary:#1db954;
+      --text:#ffffff;
+      --muted:#e6f5ea;
+      --glass: rgba(0,0,0,0.35);
+      --border: rgba(255,255,255,0.12);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;}
+    body{
+      margin:0;padding:0;color:var(--text);
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background: url('./bg.png') center top / cover no-repeat fixed #0b0f0e;
+    }
+    .wrap{
+      min-height:100vh;
+      display:flex;
+      align-items:flex-start;
+      justify-content:center;
+      padding:60px 20px 24px; /* ~1,5cm abaixo do topo */
+    }
+    .card{
+      width:min(92vw,440px);
+      background: var(--glass);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      border:1px solid var(--border);
+      border-radius:16px;
+      box-shadow:0 8px 32px rgba(0,0,0,.35);
+      padding:20px;
+    }
+    h1{font-size:20px;margin:0 0 8px;font-weight:800;letter-spacing:.3px}
+    p.sub{margin:0 0 16px;color:#d9f2e1;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+    .btn{width:100%;padding:14px 16px;border:none;border-radius:12px;background:var(--primary);color:#000;font-weight:800;font-size:16px;cursor:pointer}
+    .row{display:flex;gap:12px;align-items:center;margin-top:14px}
+    .range{flex:1}
+    .badge{display:inline-block;padding:6px 10px;border-radius:999px;background:rgba(0,0,0,.45);color:var(--muted);font-size:12px;border:1px solid var(--border)}
+    .install{margin-top:14px;text-align:center}
+    .install button{background:transparent;border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:10px;cursor:pointer}
+    footer{margin-top:18px;text-align:center;font-size:12px;color:#e6f5ea;text-shadow:0 1px 2px rgba(0,0,0,.3)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Verdes Campos • Ao Vivo</h1>
+      <p class="sub">Toque para ouvir a transmissão</p>
+      <button id="playBtn" class="btn">▶️ Tocar</button>
+      <div class="row">
+        <span class="badge" id="status">parado</span>
+        <input id="vol" class="range" type="range" min="0" max="1" step="0.01" value="1"/>
+      </div>
+      <div class="install" id="installBox" style="display:none">
+        <button id="installBtn">Instalar no meu celular</button>
+      </div>
+      <footer>Se o áudio não iniciar, toque no botão acima.</footer>
+    </div>
+  </div>
+
+  <audio id="player" preload="none" src="https://radioverdescampos-stream.euabima.workers.dev/"></audio>
+
+  <script>
+    // Player
+    const audio = document.getElementById('player');
+    const btn   = document.getElementById('playBtn');
+    const vol   = document.getElementById('vol');
+    const status= document.getElementById('status');
+    function setStatus(s){ status.textContent=s; }
+    function updateBtn(){ btn.textContent = audio.paused ? '▶️ Tocar' : '⏸️ Pausar'; }
+    btn.addEventListener('click', async ()=>{
+      try{ if(audio.paused){ await audio.play(); setStatus('ao vivo'); } else { audio.pause(); setStatus('pausado'); } updateBtn(); }
+      catch(e){ setStatus('erro: ' + e.message); }
+    });
+    vol.addEventListener('input', ()=> audio.volume = vol.value);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden && audio.paused){ audio.play().then(()=>{ setStatus('ao vivo'); updateBtn(); }).catch(()=>{}); }});
+    setStatus('parado'); updateBtn();
+
+    // PWA install
+    let deferredPrompt;
+    const installBox = document.getElementById('installBox');
+    const installBtn = document.getElementById('installBtn');
+    window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredPrompt = e; installBox.style.display = 'block'; });
+    installBtn?.addEventListener('click', async ()=>{ if(!deferredPrompt) return; deferredPrompt.prompt(); await deferredPrompt.userChoice; installBox.style.display='none'; deferredPrompt=null; });
+
+    if ('serviceWorker' in navigator) { window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(()=>{}); }); }
+  </script>
+</body>
+</html>
