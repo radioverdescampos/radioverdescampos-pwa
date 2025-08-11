@@ -19,9 +19,9 @@
       height: 100%;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end; /* posiciona no rodapé */
+      justify-content: center; /* centraliza verticalmente */
       align-items: center;
-      padding-bottom: 110px; /* espaço acima da frase */
+      gap: 20px; /* espaço entre player e botão do site */
     }
 
     .player {
@@ -63,6 +63,23 @@
       width: 100%;
       margin-top: 6px;
     }
+
+    /* Botão do site */
+    .site-link {
+      background: rgba(255, 255, 255, 0.85);
+      padding: 10px 15px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      color: #2c3e50;
+      text-decoration: none;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    .site-link:hover {
+      background: white;
+    }
   </style>
 </head>
 <body>
@@ -73,6 +90,11 @@
       <p id="status">parado</p>
       <input type="range" id="volume" class="volume" min="0" max="1" step="0.01" value="1">
     </div>
+
+    <!-- Link para o site -->
+    <a href="https://www.radioverdescamposfm.com.br" target="_blank" class="site-link">
+      Acesse nosso site: www.radioverdescamposfm.com.br
+    </a>
   </div>
 
   <script>
