@@ -214,6 +214,21 @@
     .tile small{display:block;color:var(--mut2);font-size:12.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .tile > span:last-child{min-width:0}
 
+    /* ---------- Avisos de notícias ---------- */
+    .push{display:flex;align-items:center;gap:14px;padding:14px 16px;flex-wrap:wrap}
+    .push[hidden]{display:none}
+    .push-ic{width:46px;height:46px;flex:none;border-radius:14px;display:grid;place-items:center;color:var(--green);
+      background:rgba(25,229,105,.12);border:1px solid rgba(25,229,105,.28);transition:background .2s,color .2s}
+    .push-ic svg{width:22px;height:22px}
+    .push-txt{min-width:0;flex:1 1 180px}
+    .push-txt b{display:block;font-weight:600;font-size:15.5px}
+    .push-txt span{display:block;color:var(--mut);font-size:13.5px;line-height:1.45;margin-top:2px}
+    .push-btn{flex:none;margin-left:auto;border:0;cursor:pointer;font-weight:600;font-size:14px;padding:10px 18px;border-radius:99px;
+      background:var(--green);color:var(--green-ink);transition:opacity .2s}
+    .push-btn:disabled{opacity:.6;cursor:default}
+    .push.on .push-ic{background:var(--green);color:var(--green-ink)}
+    .push.on .push-btn,.push[data-state="denied"] .push-btn,.push[data-state="install"] .push-btn{background:transparent;color:var(--ink);border:1px solid var(--line2)}
+
     /* ---------- Programação ---------- */
     .tabs{display:inline-flex;gap:2px;padding:4px;border-radius:99px;background:rgba(255,255,255,.05);border:1px solid var(--line)}
     .tabs button{border:0;background:none;cursor:pointer;color:var(--mut);font-weight:600;font-size:13.5px;padding:9px 15px;border-radius:99px;transition:background .2s,color .2s}
@@ -332,6 +347,7 @@
       <symbol id="i-arrow" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M8.5 7H17v8.5"/></symbol>
       <symbol id="i-cal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/></g></symbol>
       <symbol id="i-ios-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 14V3M8 7l4-4 4 4"/><path d="M8.5 10.5H6.5a1.5 1.5 0 0 0-1.5 1.5v7.5A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5V12a1.5 1.5 0 0 0-1.5-1.5h-2"/></g></symbol>
+      <symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9.5a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15.5 6 9.5z"/><path d="M10 20.5a2.2 2.2 0 0 0 4 0"/></g></symbol>
     </defs>
   </svg>
 
@@ -452,6 +468,15 @@
           </div>
         </section>
 
+        <div class="card push" id="pushCard" data-state="off" hidden>
+          <div class="push-ic"><svg aria-hidden="true"><use href="#i-bell"/></svg></div>
+          <div class="push-txt">
+            <b id="pushTitle">Avisos de notícias</b>
+            <span id="pushDesc">Receba no celular as notícias novas da Verdes Campos assim que saírem.</span>
+          </div>
+          <button class="push-btn" id="pushBtn" type="button">Ativar</button>
+        </div>
+
         <section class="card" id="programacao" aria-labelledby="progTitle">
           <p class="eyebrow mono">A trilha sonora da sua rotina</p>
           <h2 class="h2" id="progTitle">Programação</h2>
@@ -485,7 +510,7 @@
             <svg aria-hidden="true"><use href="#i-ios-share"/></svg>
             <span><b style="color:var(--ink)">Tenha a rádio na tela do iPhone:</b> toque em Compartilhar e depois em “Adicionar à Tela de Início”.</span>
           </div>
-          <p class="legal mono">Rádio Verdes Campos · 97.9 FM</p>
+          <p class="legal mono">Rádio Verdes Campos · 97.9 FM · <a href="privacidade.html" style="color:inherit">Privacidade</a></p>
         </footer>
       </div>
     </div>
@@ -829,6 +854,75 @@
       }, { threshold: 0 }).observe(controls);
     }
     addEventListener('scroll', () => $('top').classList.toggle('scrolled', scrollY > 8), { passive:true });
+
+    /* =========================================================
+       AVISOS DE NOTÍCIAS (notificações no celular)
+       ========================================================= */
+    const API_PUSH = '/api/push';
+    const pushOK = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+    const pushCard = $('pushCard');
+    const PUSH_TXT = {
+      off:     ['Avisos de notícias', 'Receba no celular as notícias novas da Verdes Campos assim que saírem.', 'Ativar'],
+      on:      ['Avisos ligados', 'Você recebe aqui as notícias novas da Verdes Campos.', 'Desligar'],
+      denied:  ['Avisos bloqueados', 'Libere as notificações deste app nas configurações do celular ou do navegador.', 'Entendi'],
+      install: ['Avisos de notícias', 'No iPhone, primeiro coloque o app na Tela de Início e abra por lá.', 'Como fazer'],
+      busy:    ['Avisos de notícias', 'Só um instante…', 'Aguarde'],
+    };
+    function b64ToBytes(b64){ const p = '='.repeat((4 - b64.length % 4) % 4); const raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); }
+    async function currentSub(){ try { const reg = await navigator.serviceWorker.ready; return await reg.pushManager.getSubscription(); } catch { return null; } }
+    function paintPush(state){
+      const t = PUSH_TXT[state];
+      pushCard.dataset.state = state;
+      pushCard.classList.toggle('on', state === 'on');
+      $('pushTitle').textContent = t[0]; $('pushDesc').textContent = t[1];
+      $('pushBtn').textContent = t[2]; $('pushBtn').disabled = state === 'busy';
+    }
+    function savePush(sub, welcome){
+      return fetch(API_PUSH, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ subscription: sub.toJSON(), welcome: !!welcome }) });
+    }
+    async function refreshPush(){
+      if (isIOS && !standalone && !pushOK){ pushCard.hidden = false; paintPush('install'); return; }
+      if (!pushOK){ pushCard.hidden = true; return; }
+      pushCard.hidden = false;
+      if (Notification.permission === 'denied'){ paintPush('denied'); return; }
+      const sub = await currentSub();
+      paintPush(sub ? 'on' : 'off');
+      if (sub && Date.now() - store.get('vc-push-sync', 0) > 7 * 864e5){   // confirma a inscrição com o servidor 1x por semana
+        savePush(sub).then(r => { if (r.ok) store.set('vc-push-sync', Date.now()); }).catch(() => {});
+      }
+    }
+    async function enablePush(){
+      paintPush('busy');
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted'){ paintPush(perm === 'denied' ? 'denied' : 'off'); return; }
+        const reg = await navigator.serviceWorker.ready;
+        const { publicKey } = await fetch(API_PUSH, { cache: 'no-store' }).then(r => { if (!r.ok) throw new Error('chave'); return r.json(); });
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(publicKey) });
+        const r = await savePush(sub, true);
+        if (!r.ok) throw new Error('salvar');
+        store.set('vc-push-sync', Date.now());
+        paintPush('on'); toast('Avisos ligados!');
+      } catch (e) { paintPush('off'); toast('Não deu para ligar os avisos agora'); }
+    }
+    async function disablePush(){
+      paintPush('busy');
+      const sub = await currentSub();
+      if (sub){
+        fetch(API_PUSH, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
+        try { await sub.unsubscribe(); } catch {}
+      }
+      paintPush('off'); toast('Avisos desligados');
+    }
+    $('pushBtn').addEventListener('click', () => {
+      const s = pushCard.dataset.state;
+      if (s === 'off') enablePush();
+      else if (s === 'on') disablePush();
+      else if (s === 'install'){ $('iosTip').hidden = false; $('iosTip').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      else if (s === 'denied') toast('Libere as notificações nas configurações');
+    });
+    refreshPush();
 
     /* =========================================================
        INÍCIO

@@ -1,7 +1,7 @@
 /* Rádio Verdes Campos — service worker
    Guarda a "casca" do app para abrir rápido e funcionar sem internet.
    O áudio ao vivo NUNCA passa pelo cache. Ao publicar mudanças, troque a versão abaixo. */
-const VERSION = 'vc-app-2026-11-18c';
+const VERSION = 'vc-app-2026-11-18d';
 const SHELL = [
   './',
   './index.html',
@@ -31,8 +31,9 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(req.url);
 
-  // Transmissão ao vivo: deixa passar direto, sem cache.
+  // Transmissão ao vivo e servidor dos avisos: deixa passar direto, sem cache.
   if (url.hostname.endsWith('workers.dev') || req.destination === 'audio' || req.headers.has('range')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/.netlify/')) return;
 
   // Páginas: tenta a internet primeiro (sempre a versão mais nova); sem internet, usa a cópia guardada.
   if (req.mode === 'navigate') {
@@ -69,4 +70,31 @@ self.addEventListener('fetch', (event) => {
       )
     );
   }
+});
+
+// Avisos de notícias: mostra a notificação quando chega uma notícia nova.
+self.addEventListener('push', (event) => {
+  let d = {};
+  try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : '' }; }
+  const options = {
+    body: d.body || 'Tem notícia nova no portal da Verdes Campos.',
+    icon: './icon-v2-192.png',
+    tag: d.tag || 'noticia',
+    lang: 'pt-BR',
+    data: { url: d.url || './' }
+  };
+  if (d.image) options.image = d.image;
+  event.waitUntil(self.registration.showNotification(d.title || 'Verdes Campos 97.9', options));
+});
+
+// Toque na notificação: abre a notícia.
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = new URL((event.notification.data && event.notification.data.url) || './', self.location.href).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if (c.url === url && 'focus' in c) return c.focus(); }
+      return self.clients.openWindow(url);
+    })
+  );
 });
