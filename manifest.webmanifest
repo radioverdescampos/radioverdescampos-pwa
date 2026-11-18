@@ -1,15 +1,20 @@
 {
-  "name": "Rádio Verdes Campos FM - Ao Vivo",
-  "short_name": "Rádio Verdes Campos FM",
-  "start_url": ".",
-  "scope": ".",
+  "id": "./",
+  "name": "Rádio Verdes Campos 97.9 FM",
+  "short_name": "Verdes Campos",
+  "description": "Ouça a Rádio Verdes Campos 97.9 FM ao vivo. A rádio que eu sempre quis!",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#0b0f0e",
-  "theme_color": "#0b0f0e",
+  "background_color": "#041109",
+  "theme_color": "#041109",
+  "categories": ["music", "news", "entertainment"],
   "icons": [
-    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
-    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png" }
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-256.png", "sizes": "256x256", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
   ]
 }
