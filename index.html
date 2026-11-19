@@ -654,8 +654,25 @@
     const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const audio = new Audio();
     audio.preload = 'none';
+    const DIAG = location.hash === '#diag';   // abra o app com #diag no fim do endereço para ver o modo e o tempo até tocar
     let want = false, retries = 0, retryTimer = null, waitTimer = null;
-    let fast = !IOS && typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported && MediaSource.isTypeSupported('audio/mpeg');
+    // Modo rápido: iPhone/iPad usam o ManagedMediaSource (iOS 17.1+); Android e computador, o MediaSource.
+    // Se o aparelho não aceitar esse formato de áudio, fica o player comum.
+    const MMS = window.ManagedMediaSource && window.ManagedMediaSource.isTypeSupported && window.ManagedMediaSource.isTypeSupported('audio/mpeg') ? window.ManagedMediaSource : null;
+    const MSE = !IOS && window.MediaSource && window.MediaSource.isTypeSupported && window.MediaSource.isTypeSupported('audio/mpeg') ? window.MediaSource : null;
+    const FastSource = MMS || MSE;
+    let fast = !!FastSource;
+    let t0 = 0;
+    // Põe o áudio no player. No modo do iPhone vai junto o endereço comum, para o AirPlay e como reserva.
+    function attach(url){
+      audio.removeAttribute('src'); audio.replaceChildren();
+      if (FastSource === MMS && url !== STREAM){
+        const a = document.createElement('source'); a.src = url;
+        const b = document.createElement('source'); b.src = STREAM; b.type = 'audio/mpeg';
+        audio.append(a, b); audio.load();
+      } else audio.src = url;
+    }
+    function detach(){ audio.removeAttribute('src'); audio.replaceChildren(); audio.load(); }
     let live = null, warm = null, warmTimer = null, fastFails = 0, gen = 0;
 
     const STATUS = {
@@ -683,9 +700,9 @@
     /* Transmissão entregue pelo app: baixa o áudio e entrega ao player aos poucos */
     const idle = sb => sb.updating ? new Promise(r => sb.addEventListener('updateend', r, { once: true })) : Promise.resolve();
     function openLive(){
-      const s = { ms: new MediaSource(), ctrl: new AbortController(), closed: false, played: false };
+      const s = { ms: new FastSource(), ctrl: new AbortController(), closed: false, played: false };
       s.url = URL.createObjectURL(s.ms);
-      audio.src = s.url;
+      attach(s.url);
       s.ready = new Promise((resolve, reject) => {
         s.ms.addEventListener('sourceopen', async () => {
           try {
@@ -742,7 +759,7 @@
     }
     function dropWarm(){
       clearTimeout(warmTimer);
-      if (warm && !want){ closeLive(warm); if (live === warm) live = null; audio.removeAttribute('src'); audio.load(); }
+      if (warm && !want){ closeLive(warm); if (live === warm) live = null; detach(); }
       warm = null;
     }
     // Ao encostar o dedo no play a conexão já começa, antes mesmo de soltar.
@@ -755,6 +772,7 @@
 
     async function start(){
       const my = ++gen;                       // identifica esta tentativa; tentativas antigas são ignoradas
+      if (!retries) t0 = performance.now();
       want = true;
       clearTimeout(retryTimer); clearTimeout(warmTimer);
       setState(retries ? 'reconnecting' : 'loading');
@@ -768,7 +786,7 @@
           await s.ready;
           await playing;
         } else {
-          audio.src = STREAM;                 // sempre reconecta no “ao vivo”
+          attach(STREAM);                     // sempre reconecta no “ao vivo”
           await audio.play();
         }
       } catch (err) {
@@ -783,7 +801,7 @@
       clearTimeout(retryTimer); clearTimeout(waitTimer); clearTimeout(warmTimer);
       audio.pause();
       closeLive(live); live = null; warm = null;
-      audio.removeAttribute('src'); audio.load();   // para de baixar o áudio
+      detach();                                    // para de baixar o áudio
       setState('idle');
     }
     function retry(){
@@ -799,7 +817,10 @@
     }
     function toggle(){ (want ? stop : start)(); }
 
-    audio.addEventListener('playing', () => { retries = 0; fastFails = 0; if (live) live.played = true; clearTimeout(waitTimer); setState('playing'); });
+    audio.addEventListener('playing', () => {
+      if (DIAG && t0){ toast((fast ? (FastSource === MMS ? 'Modo rápido iPhone' : 'Modo rápido') : 'Player comum') + ' · ' + ((performance.now() - t0) / 1000).toFixed(1).replace('.', ',') + ' s'); t0 = 0; }
+      retries = 0; fastFails = 0; if (live) live.played = true; clearTimeout(waitTimer); setState('playing');
+    });
     audio.addEventListener('waiting', () => {
       if (!want) return;
       setState(retries ? 'reconnecting' : 'loading');
@@ -1028,6 +1049,7 @@
        ========================================================= */
     renderNow();
     setState('idle');
+    if (DIAG) setTimeout(() => toast('Teste: ' + (MMS ? 'iPhone rápido disponível' : MSE ? 'modo rápido disponível' : 'só player comum')), 800);
     setInterval(renderNow, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) renderNow(); });
 
