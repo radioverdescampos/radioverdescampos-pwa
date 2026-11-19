@@ -1,7 +1,7 @@
 /* Rádio Verdes Campos — service worker
    Guarda a "casca" do app para abrir rápido e funcionar sem internet.
    O áudio ao vivo NUNCA passa pelo cache. Ao publicar mudanças, troque a versão abaixo. */
-const VERSION = 'vc-app-2026-11-18d';
+const VERSION = 'vc-app-2026-11-18e';
 const SHELL = [
   './',
   './index.html',
