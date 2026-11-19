@@ -646,10 +646,64 @@
     document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.g; renderList(); }));
 
     /* =========================================================
+       ESTATÍSTICAS ANÔNIMAS (painel de dados da rádio)
+       Conta aparelhos, instalações e quantos estão ouvindo agora.
+       Não envia nome, telefone, e-mail nem nada digitado: só um código
+       aleatório deste aparelho, o sistema (Android/iPhone/computador),
+       se o app está instalado e o programa no ar.
+       ========================================================= */
+    const STATS = 'https://radioverdescampos-dados.euabima.workers.dev/e';
+    const statsOS = /android/i.test(navigator.userAgent) ? 'android'
+      : (/iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) ? 'ios'
+      : /windows|macintosh|mac os x|linux|cros/i.test(navigator.userAgent) ? 'desktop' : 'other';
+    function rid(){
+      try { return crypto.randomUUID(); }
+      catch { return Array.from(crypto.getRandomValues(new Uint8Array(16)), x => x.toString(16).padStart(2, '0')).join(''); }
+    }
+    const statsId = (() => { let id = store.get('vc-id', ''); if (!/^[A-Za-z0-9-]{16,40}$/.test(id)){ id = rid(); store.set('vc-id', id); } return id; })();
+    let statsSess = '', statsHb = 0, statsTimer = null, statsHidden = 0;
+    function statsMode(){ return (matchMedia('(display-mode: standalone)').matches || navigator.standalone === true) ? 'app' : 'web'; }
+    function track(t, extra){
+      try {
+        const body = JSON.stringify(Object.assign({ t, d: statsId, m: statsMode(), os: statsOS }, extra));
+        if (navigator.sendBeacon && navigator.sendBeacon(STATS, body)) return;
+        fetch(STATS, { method: 'POST', body, keepalive: true, mode: 'no-cors' }).catch(() => {});
+      } catch {}
+    }
+    function statsProg(){ const p = current(nowSP()); return p ? p.n : ''; }
+    function statsBeat(){                       // sinal de "ainda ouvindo", 1x por minuto
+      if (!statsSess || document.body.dataset.state !== 'playing' || Date.now() - statsHb < 55000) return;
+      statsHb = Date.now();
+      track('hb', { s: statsSess, p: statsProg() });
+    }
+    function statsState(s){
+      if (s === 'playing' && !statsSess){
+        statsSess = rid(); statsHb = Date.now();
+        track('play', { s: statsSess, p: statsProg() });
+        clearInterval(statsTimer); statsTimer = setInterval(statsBeat, 15000);
+      } else if ((s === 'idle' || s === 'error') && statsSess){
+        track('stop', { s: statsSess });
+        statsSess = ''; clearInterval(statsTimer);
+      }
+    }
+    function statsOpen(){
+      const pushOn = !('serviceWorker' in navigator && 'PushManager' in window) ? Promise.resolve(false)
+        : Promise.race([navigator.serviceWorker.ready.then(r => r.pushManager.getSubscription()).then(Boolean), new Promise(r => setTimeout(() => r(false), 4000))]);
+      pushOn.catch(() => false).then(on => track('open', { n: on ? 1 : 0 }));
+    }
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden){ statsHidden = Date.now(); return; }
+      if (statsHidden && Date.now() - statsHidden > 30 * 60000) statsOpen();   // voltou ao app depois de 30 min
+      statsBeat();
+    });
+    addEventListener('pagehide', () => { if (statsSess){ track('stop', { s: statsSess }); statsSess = ''; clearInterval(statsTimer); } });
+
+    /* =========================================================
        PLAYER (início rápido + reconexão automática)
-       No Android e no computador o áudio chega pelo próprio app (MediaSource),
-       o que faz a rádio começar a tocar em menos de 1 segundo.
-       No iPhone o player nativo já é rápido e segue sendo usado.
+       O áudio chega pelo próprio app (MediaSource no Android e no computador,
+       ManagedMediaSource no iPhone com iOS 17.1 ou mais novo), o que faz a
+       rádio começar a tocar em menos de 1 segundo. Aparelhos sem esse recurso
+       usam o player comum.
        ========================================================= */
     const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const audio = new Audio();
@@ -692,6 +746,7 @@
       $('miniPlay').setAttribute('aria-label', label);
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = want ? 'playing' : 'paused';
       updateTitle();
+      statsState(s);
     }
     function updateTitle(){
       document.title = (document.body.dataset.state === 'playing' ? '▶ ' : '') + (nowProg ? nowProg.n + ' · ' : '') + 'Verdes Campos 97.9 FM';
@@ -783,6 +838,7 @@
           warm = null;
           const s = live;
           const playing = audio.play();       // chamado no toque: o navegador libera o som
+          playing.catch(() => {});            // evita aviso de erro solto se parar antes de conectar
           await s.ready;
           await playing;
         } else {
@@ -827,6 +883,7 @@
       clearTimeout(waitTimer);
       waitTimer = setTimeout(retry, 12000);   // travou? reconecta sozinho
     });
+    audio.addEventListener('timeupdate', statsBeat);   // mantém o sinal mesmo com a tela bloqueada
     audio.addEventListener('error', () => { if (want) retry(); });
     audio.addEventListener('ended', () => { if (want) retry(); });
     audio.addEventListener('pause', () => {      // pausado pelo sistema (ligação, fone desconectado…)
@@ -950,7 +1007,7 @@
       try { await deferred.userChoice; } catch {}
       deferred = null; $('installBtn').hidden = true;
     });
-    addEventListener('appinstalled', () => { $('installBtn').hidden = true; toast('App instalado! 🎉'); });
+    addEventListener('appinstalled', () => { $('installBtn').hidden = true; toast('App instalado! 🎉'); track('install'); });
 
     const isIOS = IOS;
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
@@ -1023,7 +1080,7 @@
         const r = await savePush(sub, true);
         if (!r.ok) throw new Error('salvar');
         store.set('vc-push-sync', Date.now());
-        paintPush('on'); toast('Avisos ligados!');
+        paintPush('on'); toast('Avisos ligados!'); track('push', { n: 1 });
       } catch (e) { paintPush('off'); toast('Não deu para ligar os avisos agora'); }
     }
     async function disablePush(){
@@ -1033,7 +1090,7 @@
         fetch(API_PUSH, { method: 'DELETE', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) }).catch(() => {});
         try { await sub.unsubscribe(); } catch {}
       }
-      paintPush('off'); toast('Avisos desligados');
+      paintPush('off'); toast('Avisos desligados'); track('push', { n: 0 });
     }
     $('pushBtn').addEventListener('click', () => {
       const s = pushCard.dataset.state;
@@ -1049,6 +1106,7 @@
        ========================================================= */
     renderNow();
     setState('idle');
+    statsOpen();
     if (DIAG) setTimeout(() => toast('Teste: ' + (MMS ? 'iPhone rápido disponível' : MSE ? 'modo rápido disponível' : 'só player comum')), 800);
     setInterval(renderNow, 30000);
     document.addEventListener('visibilitychange', () => { if (!document.hidden) renderNow(); });
