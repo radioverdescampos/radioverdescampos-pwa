@@ -25,6 +25,9 @@
   <meta property="og:url" content="https://radioverdescamposfm.netlify.app/">
 
   <!-- Fontes (as mesmas do portal) -->
+  <!-- Conexão antecipada com o servidor da transmissão: a rádio começa mais rápido -->
+  <link rel="preconnect" href="https://radioverdescampos-stream.euabima.workers.dev" crossorigin>
+  <link rel="preconnect" href="https://radioverdescampos-stream.euabima.workers.dev">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&family=Geist+Mono:wght@500..600&family=Montserrat:ital,wght@1,800..900&display=swap">
@@ -643,11 +646,17 @@
     document.querySelectorAll('.tabs button').forEach(b => b.addEventListener('click', () => { tab = b.dataset.g; renderList(); }));
 
     /* =========================================================
-       PLAYER (com reconexão automática)
+       PLAYER (início rápido + reconexão automática)
+       No Android e no computador o áudio chega pelo próprio app (MediaSource),
+       o que faz a rádio começar a tocar em menos de 1 segundo.
+       No iPhone o player nativo já é rápido e segue sendo usado.
        ========================================================= */
+    const IOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     const audio = new Audio();
     audio.preload = 'none';
     let want = false, retries = 0, retryTimer = null, waitTimer = null;
+    let fast = !IOS && typeof MediaSource !== 'undefined' && MediaSource.isTypeSupported && MediaSource.isTypeSupported('audio/mpeg');
+    let live = null, warm = null, warmTimer = null, fastFails = 0, gen = 0;
 
     const STATUS = {
       idle:         ['Toque para ouvir ao vivo', 'Ao vivo'],
@@ -671,29 +680,117 @@
       document.title = (document.body.dataset.state === 'playing' ? '▶ ' : '') + (nowProg ? nowProg.n + ' · ' : '') + 'Verdes Campos 97.9 FM';
     }
 
+    /* Transmissão entregue pelo app: baixa o áudio e entrega ao player aos poucos */
+    const idle = sb => sb.updating ? new Promise(r => sb.addEventListener('updateend', r, { once: true })) : Promise.resolve();
+    function openLive(){
+      const s = { ms: new MediaSource(), ctrl: new AbortController(), closed: false, played: false };
+      s.url = URL.createObjectURL(s.ms);
+      audio.src = s.url;
+      s.ready = new Promise((resolve, reject) => {
+        s.ms.addEventListener('sourceopen', async () => {
+          try {
+            s.sb = s.ms.addSourceBuffer('audio/mpeg');
+            s.sb.mode = 'sequence';
+            const resp = await fetch(STREAM, { cache: 'no-store', signal: s.ctrl.signal });
+            if (!resp.ok || !resp.body) throw new Error('HTTP ' + resp.status);
+            resolve();
+            pump(s, resp.body.getReader());
+          } catch (e) { reject(e); }
+        }, { once: true });
+      });
+      s.ready.catch(() => {});
+      return s;
+    }
+    async function pump(s, reader){
+      try {
+        while (!s.closed){
+          const { value, done } = await reader.read();
+          if (done) throw new Error('fim da transmissão');
+          await feed(s, value);
+        }
+      } catch (e) {
+        if (!s.closed && live === s && want) retry();
+      }
+    }
+    async function feed(s, chunk){
+      const sb = s.sb;
+      await idle(sb);
+      if (s.closed) return;
+      const b = sb.buffered;
+      if (b.length && audio.currentTime - b.start(0) > 90){            // libera memória: guarda só o último minuto
+        sb.remove(b.start(0), audio.currentTime - 30); await idle(sb); if (s.closed) return;
+      }
+      try { sb.appendBuffer(chunk); }
+      catch (e) {
+        if (e.name !== 'QuotaExceededError' || !sb.buffered.length) throw e;
+        sb.remove(sb.buffered.start(0), Math.max(sb.buffered.start(0) + 1, audio.currentTime - 5)); await idle(sb);
+        if (s.closed) return;
+        sb.appendBuffer(chunk);
+      }
+      await idle(sb);
+      if (want && !audio.paused && sb.buffered.length){                 // ficou para trás? volta para o ao vivo
+        const end = sb.buffered.end(sb.buffered.length - 1);
+        if (end - audio.currentTime > 12) audio.currentTime = end - 1.5;
+      }
+    }
+    function closeLive(s){
+      if (!s || s.closed) return;
+      s.closed = true;
+      try { s.ctrl.abort(); } catch {}
+      try { if (s.ms.readyState === 'open') s.ms.endOfStream(); } catch {}
+      URL.revokeObjectURL(s.url);
+    }
+    function dropWarm(){
+      clearTimeout(warmTimer);
+      if (warm && !want){ closeLive(warm); if (live === warm) live = null; audio.removeAttribute('src'); audio.load(); }
+      warm = null;
+    }
+    // Ao encostar o dedo no play a conexão já começa, antes mesmo de soltar.
+    function prewarm(){
+      if (want || warm || !fast || !navigator.onLine) return;
+      closeLive(live);
+      live = warm = openLive();
+      warmTimer = setTimeout(dropWarm, 5000);
+    }
+
     async function start(){
+      const my = ++gen;                       // identifica esta tentativa; tentativas antigas são ignoradas
       want = true;
-      clearTimeout(retryTimer);
+      clearTimeout(retryTimer); clearTimeout(warmTimer);
       setState(retries ? 'reconnecting' : 'loading');
       if (!navigator.onLine){ setState('offline'); return; }
-      audio.src = STREAM;               // sempre reconecta no “ao vivo”
-      try { await audio.play(); }
-      catch (err){
-        if (err && err.name === 'NotAllowedError'){ want = false; setState('idle'); return; }
-        if (err && err.name === 'AbortError') return;
+      try {
+        if (fast){
+          if (!(warm && live === warm && !warm.closed)){ closeLive(live); live = openLive(); }
+          warm = null;
+          const s = live;
+          const playing = audio.play();       // chamado no toque: o navegador libera o som
+          await s.ready;
+          await playing;
+        } else {
+          audio.src = STREAM;                 // sempre reconecta no “ao vivo”
+          await audio.play();
+        }
+      } catch (err) {
+        if (my !== gen || !want) return;
+        if (err && err.name === 'NotAllowedError'){ want = false; closeLive(live); live = null; setState('idle'); return; }
         retry();
       }
     }
     function stop(){
+      gen++;
       want = false; retries = 0;
-      clearTimeout(retryTimer); clearTimeout(waitTimer);
+      clearTimeout(retryTimer); clearTimeout(waitTimer); clearTimeout(warmTimer);
       audio.pause();
+      closeLive(live); live = null; warm = null;
       audio.removeAttribute('src'); audio.load();   // para de baixar o áudio
       setState('idle');
     }
     function retry(){
       if (!want) return;
-      clearTimeout(waitTimer);
+      clearTimeout(waitTimer); clearTimeout(retryTimer);
+      if (fast && live && !live.played && ++fastFails >= 2) fast = false;   // se o modo rápido falhar, usa o player comum
+      closeLive(live); live = null;
       if (!navigator.onLine){ setState('offline'); return; }
       if (retries >= 6){ want = false; retries = 0; setState('error'); return; }
       retries++;
@@ -702,7 +799,7 @@
     }
     function toggle(){ (want ? stop : start)(); }
 
-    audio.addEventListener('playing', () => { retries = 0; clearTimeout(waitTimer); setState('playing'); });
+    audio.addEventListener('playing', () => { retries = 0; fastFails = 0; if (live) live.played = true; clearTimeout(waitTimer); setState('playing'); });
     audio.addEventListener('waiting', () => {
       if (!want) return;
       setState(retries ? 'reconnecting' : 'loading');
@@ -712,13 +809,15 @@
     audio.addEventListener('error', () => { if (want) retry(); });
     audio.addEventListener('ended', () => { if (want) retry(); });
     audio.addEventListener('pause', () => {      // pausado pelo sistema (ligação, fone desconectado…)
-      if (want && document.body.dataset.state === 'playing' && audio.src){ want = false; setState('idle'); }
+      if (want && document.body.dataset.state === 'playing') stop();
     });
     addEventListener('online',  () => { if (want){ retries = 0; start(); } });
     addEventListener('offline', () => { if (want) setState('offline'); });
 
-    $('playBtn').addEventListener('click', toggle);
-    $('miniPlay').addEventListener('click', toggle);
+    for (const id of ['playBtn', 'miniPlay']){
+      $(id).addEventListener('click', toggle);
+      $(id).addEventListener('pointerdown', prewarm);
+    }
     document.addEventListener('keydown', e => {
       if ((e.code === 'Space' || e.key === 'k') && !/^(INPUT|BUTTON|A|TEXTAREA|SELECT)$/.test(e.target.tagName)){ e.preventDefault(); toggle(); }
     });
@@ -832,7 +931,7 @@
     });
     addEventListener('appinstalled', () => { $('installBtn').hidden = true; toast('App instalado! 🎉'); });
 
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isIOS = IOS;
     const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
     if (isIOS && !standalone) $('iosTip').hidden = false;
 
