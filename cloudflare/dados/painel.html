@@ -1,0 +1,573 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Dados do app · Rádio Verdes Campos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f4f3f0; --surface:#fcfcfb; --line:#e6e5e1; --grid:#e9e8e4;
+    --text:#0b0b0b; --text2:#52514e; --muted:#77766f;
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --other:#a3a29d; --cmp:#8f8e88;
+    --good:#0ca30c; --critical:#d03b3b;
+    --brand:#0b2a19; --brand2:#123d25; --brand-ink:#eaf6ee; --accent:#3ddc84;
+    --hover: rgba(0,0,0,.04);
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      color-scheme: dark;
+      --bg:#111110; --surface:#1a1a19; --line:#2b2b29; --grid:#2b2b29;
+      --text:#f0efec; --text2:#c3c2b7; --muted:#8f8e86;
+      --s1:#3987e5; --s2:#d95926; --s3:#199e70; --other:#6b6a64; --cmp:#6b6a64;
+      --hover: rgba(255,255,255,.05);
+    }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{ font-family:Geist, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background:var(--bg); color:var(--text); font-size:15px; line-height:1.45; -webkit-font-smoothing:antialiased; }
+  button,input{ font:inherit; }
+  .top{ position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:14px; padding:12px clamp(14px,3vw,28px); background:var(--brand); color:var(--brand-ink); }
+  .brand{ display:flex; align-items:center; gap:12px; min-width:0; }
+  .dial{ font-weight:700; font-size:13px; letter-spacing:.02em; background:var(--brand2); border:1px solid rgba(255,255,255,.14); border-radius:999px; padding:5px 10px; color:var(--accent); }
+  .brand b{ display:block; font-size:15px; font-weight:650; }
+  .brand small{ display:block; font-size:12.5px; opacity:.75; }
+  .meta{ margin-left:auto; font-size:12.5px; opacity:.8; text-align:right; }
+  .ghost{ background:transparent; color:inherit; border:1px solid rgba(255,255,255,.25); border-radius:8px; padding:6px 12px; cursor:pointer; }
+  .ghost:hover{ background:rgba(255,255,255,.08); }
+  main{ max-width:1180px; margin:0 auto; padding:18px clamp(12px,3vw,28px) 48px; }
+  .card{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:18px 18px 14px; min-width:0; }
+  .card h2{ font-size:15.5px; font-weight:650; margin:0; }
+  .desc{ margin:2px 0 12px; color:var(--text2); font-size:13.5px; }
+  .grid{ display:grid; gap:14px; margin-bottom:14px; }
+  .hero-row{ grid-template-columns: minmax(280px, 1fr) 2fr; }
+  .two{ grid-template-columns: 1fr 1fr; }
+  .stack > .card{ margin-bottom:14px; }
+  @media (max-width: 860px){ .hero-row, .two{ grid-template-columns: 1fr; } }
+
+  .label{ display:flex; align-items:center; gap:8px; font-size:13.5px; color:var(--text2); font-weight:550; }
+  .livedot{ width:9px; height:9px; border-radius:50%; background:var(--good); box-shadow:0 0 0 0 rgba(12,163,12,.5); animation:pulse 1.8s infinite; }
+  @keyframes pulse{ 0%{ box-shadow:0 0 0 0 rgba(12,163,12,.45); } 70%{ box-shadow:0 0 0 8px rgba(12,163,12,0); } 100%{ box-shadow:0 0 0 0 rgba(12,163,12,0); } }
+  @media (prefers-reduced-motion: reduce){ .livedot{ animation:none; } }
+  .hero-n{ font-size:64px; font-weight:650; line-height:1.05; margin:10px 0 12px; letter-spacing:-.02em; }
+  .hero .sub{ margin:10px 0 0; color:var(--text2); font-size:13.5px; }
+
+  .tiles{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media (max-width: 520px){ .tiles{ gap:10px; } .tile{ padding:14px 14px 12px; } .tile .v{ font-size:24px; } .tile .label{ font-size:12.5px; } .tile .d{ font-size:12px; } .hero-n{ font-size:56px; } .meta{ font-size:11.5px; } }
+  .tile .v{ font-size:30px; font-weight:650; margin:6px 0 2px; letter-spacing:-.01em; }
+  .tile .d{ font-size:13px; color:var(--text2); }
+  .tile .d b{ color:var(--text); font-weight:600; }
+
+  .seg{ display:flex; gap:2px; height:8px; border-radius:4px; overflow:hidden; background:var(--grid); }
+  .seg i{ display:block; min-width:4px; border-radius:4px; }
+  .legend{ list-style:none; padding:0; margin:10px 0 0; display:flex; flex-wrap:wrap; gap:6px 16px; font-size:13px; color:var(--text2); }
+  .legend li{ display:flex; align-items:center; gap:6px; }
+  .legend .sw{ width:10px; height:10px; border-radius:3px; flex:none; }
+  .legend .ln{ width:14px; height:2px; border-radius:2px; flex:none; }
+  .legend b{ color:var(--text); font-weight:600; font-variant-numeric:tabular-nums; }
+
+  .chart{ position:relative; width:100%; }
+  .chart svg{ display:block; width:100%; overflow:visible; }
+  .chart text{ font-family:inherit; }
+  .axis{ fill:var(--muted); font-size:11.5px; font-variant-numeric:tabular-nums; }
+  .vlabel{ fill:var(--text); font-size:12px; font-weight:600; font-variant-numeric:tabular-nums; paint-order:stroke; stroke:var(--surface); stroke-width:4px; stroke-linejoin:round; }
+  .empty{ color:var(--muted); font-size:13.5px; padding:22px 0; text-align:center; }
+
+  details.nums{ margin-top:10px; font-size:13px; color:var(--text2); }
+  details.nums summary{ cursor:pointer; color:var(--muted); width:max-content; }
+  details.nums summary:hover{ color:var(--text2); }
+  .tbl{ width:100%; border-collapse:collapse; margin-top:8px; font-variant-numeric:tabular-nums; }
+  .tbl th, .tbl td{ text-align:left; padding:5px 8px; border-bottom:1px solid var(--line); }
+  .tbl th{ font-weight:600; color:var(--text2); }
+  .tbl td.n, .tbl th.n{ text-align:right; }
+  .tblwrap{ max-height:280px; overflow:auto; }
+
+  .hb{ display:grid; grid-template-columns:minmax(110px, 38%) 1fr auto; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
+  .hb:last-child{ border-bottom:0; }
+  .hb .l{ min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .hb .l small{ color:var(--muted); margin-left:4px; }
+  .hb .t{ height:10px; }
+  .hb .t i{ display:block; height:100%; border-radius:0 4px 4px 0; min-width:2px; }
+  .hb .v{ font-variant-numeric:tabular-nums; font-weight:600; text-align:right; min-width:52px; }
+  .hb .v small{ font-weight:400; color:var(--muted); margin-left:6px; }
+
+  .notes{ margin-top:22px; color:var(--text2); font-size:13px; }
+  .notes h3{ font-size:13.5px; color:var(--text); margin:0 0 6px; }
+  .notes ul{ margin:0 0 14px; padding-left:18px; }
+  .notes li{ margin:3px 0; }
+
+  .gate{ max-width:400px; margin:9vh auto 0; }
+  .gate h1{ font-size:20px; margin:0 0 4px; }
+  .gate p{ color:var(--text2); margin:0 0 16px; font-size:14px; }
+  .field{ display:block; margin-bottom:12px; }
+  .field span{ display:block; font-size:13px; color:var(--text2); margin-bottom:4px; font-weight:550; }
+  .field input{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:9px; background:var(--bg); color:var(--text); }
+  .field input:focus{ outline:2px solid var(--s1); outline-offset:1px; }
+  .btn{ width:100%; padding:11px 14px; border:0; border-radius:9px; background:var(--brand); color:var(--brand-ink); font-weight:600; cursor:pointer; }
+  .btn:disabled{ opacity:.6; cursor:default; }
+  .msg{ min-height:20px; margin:10px 0 0; font-size:13.5px; color:var(--critical); }
+  .msg.ok{ color:var(--good); }
+  .pwd{ max-width:360px; margin-top:8px; }
+  .pwd .btn{ width:auto; }
+
+  .tip{ position:fixed; z-index:20; pointer-events:none; background:var(--surface); color:var(--text); border:1px solid var(--line); border-radius:10px; padding:8px 10px; font-size:12.5px; box-shadow:0 6px 24px rgba(0,0,0,.14); min-width:120px; }
+  .tip .tt{ color:var(--muted); margin-bottom:4px; }
+  .tip .row{ display:flex; align-items:center; gap:8px; }
+  .tip .row b{ font-size:14px; font-variant-numeric:tabular-nums; }
+  .tip .row span{ color:var(--text2); }
+  .tip .ln{ width:12px; height:2px; border-radius:2px; flex:none; }
+  .err{ background:var(--surface); border:1px solid var(--line); border-left:3px solid var(--critical); border-radius:10px; padding:10px 14px; margin-bottom:14px; font-size:13.5px; }
+  .stale{ opacity:.6; transition:opacity .2s; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="dial">97.9</span><div><b>Rádio Verdes Campos</b><small>Dados do app</small></div></div>
+  <div class="meta" id="meta"></div>
+  <button class="ghost" id="sair" type="button" hidden>Sair</button>
+</header>
+
+<main>
+  <section class="gate card" id="gate" hidden>
+    <h1 id="gTitle">Entrar no painel</h1>
+    <p id="gDesc">Digite a senha do painel de dados do app.</p>
+    <form id="gForm" autocomplete="on">
+      <input type="text" name="username" value="painel" autocomplete="username" hidden>
+      <label class="field" id="fSenha"><span>Senha</span><input type="password" id="senha" autocomplete="current-password" required></label>
+      <label class="field" id="fNova" hidden><span>Nova senha (mínimo de 8 caracteres)</span><input type="password" id="nova" autocomplete="new-password" minlength="8"></label>
+      <label class="field" id="fConf" hidden><span>Repita a senha</span><input type="password" id="conf" autocomplete="new-password" minlength="8"></label>
+      <button class="btn" id="gBtn" type="submit">Entrar</button>
+      <p class="msg" id="gMsg" role="alert"></p>
+    </form>
+  </section>
+
+  <section id="app" hidden>
+    <div class="err" id="err" hidden>Não foi possível atualizar agora. Os números abaixo são da última atualização.</div>
+
+    <div class="grid hero-row">
+      <article class="card hero">
+        <div class="label"><span class="livedot" aria-hidden="true"></span>Ouvindo agora pelo app</div>
+        <div class="hero-n" id="liveN">0</div>
+        <div class="seg" id="liveSeg" role="img"></div>
+        <ul class="legend" id="liveLeg"></ul>
+        <p class="sub" id="liveSub"></p>
+      </article>
+      <div class="tiles">
+        <article class="card tile"><div class="label">Aparelhos com o app instalado</div><div class="v" id="tInst">0</div><div class="d" id="tInstD"></div></article>
+        <article class="card tile"><div class="label">Aparelhos que usaram hoje</div><div class="v" id="tAct">0</div><div class="d" id="tActD"></div></article>
+        <article class="card tile"><div class="label">Tempo ouvido hoje</div><div class="v" id="tHrs">0</div><div class="d" id="tHrsD"></div></article>
+        <article class="card tile"><div class="label">Avisos de notícia ligados</div><div class="v" id="tPush">0</div><div class="d" id="tPushD"></div></article>
+      </div>
+    </div>
+
+    <article class="card" style="margin-bottom:14px">
+      <h2>Ouvintes ao longo do dia</h2>
+      <p class="desc">Quantas pessoas ouviam a rádio pelo app, a cada 5 minutos.</p>
+      <ul class="legend" style="margin:0 0 8px"><li><span class="ln" style="background:var(--s1)"></span>Hoje</li><li><span class="ln" style="background:var(--cmp)"></span>Ontem</li></ul>
+      <div class="chart" id="cDay"></div>
+      <details class="nums"><summary>Ver números</summary><div class="tblwrap" id="tDay"></div></details>
+    </article>
+
+    <div class="grid two">
+      <article class="card">
+        <h2>Onde estão ouvindo agora</h2>
+        <p class="desc">Cidade aproximada de quem está com a rádio tocando no app.</p>
+        <div id="liveCities"></div>
+        <p class="desc" style="margin:14px 0 6px">No ar para quem está ouvindo</p>
+        <div id="liveProgs"></div>
+      </article>
+      <article class="card">
+        <h2>Aparelhos</h2>
+        <p class="desc">Sistema dos aparelhos com o app instalado (desde o início).</p>
+        <div class="seg" id="instSeg" role="img"></div>
+        <ul class="legend" id="instLeg"></ul>
+        <p class="desc" style="margin:18px 0 6px">Quem usou nos últimos 30 dias</p>
+        <div id="useMode"></div>
+      </article>
+    </div>
+
+    <div class="stack">
+      <article class="card">
+        <h2>Instalações por dia</h2>
+        <p class="desc">Aparelhos que instalaram o app, nos últimos 30 dias.</p>
+        <div class="chart" id="cInst"></div>
+        <details class="nums"><summary>Ver números</summary><div class="tblwrap" id="tInstT"></div></details>
+      </article>
+      <article class="card">
+        <h2>Aparelhos que usaram o app por dia</h2>
+        <p class="desc">Abriram o app ou ouviram a rádio, nos últimos 30 dias.</p>
+        <div class="chart" id="cAct"></div>
+        <details class="nums"><summary>Ver números</summary><div class="tblwrap" id="tActT"></div></details>
+      </article>
+    </div>
+
+    <div class="grid two">
+      <article class="card">
+        <h2>Média de ouvintes por horário</h2>
+        <p class="desc">Últimos 7 dias, pelo app.</p>
+        <div class="chart" id="cHour"></div>
+        <details class="nums"><summary>Ver números</summary><div class="tblwrap" id="tHour"></div></details>
+      </article>
+      <article class="card">
+        <h2>Programas mais ouvidos</h2>
+        <p class="desc">Tempo total ouvido pelo app nos últimos 7 dias.</p>
+        <div id="progs"></div>
+      </article>
+    </div>
+
+    <article class="card">
+      <h2>Cidades</h2>
+      <p class="desc">Aparelhos que usaram o app nos últimos 30 dias, por cidade aproximada.</p>
+      <div id="cities"></div>
+    </article>
+
+    <footer class="notes">
+      <h3>Como os números são contados</h3>
+      <ul>
+        <li><b>Ouvindo agora:</b> aparelhos com a rádio tocando no app nos últimos 2 minutos e meio. Atualiza sozinho a cada 20 segundos.</li>
+        <li><b>Instalado:</b> aparelho que abriu o app pelo ícone na tela inicial ou instalou pelo botão do app. Não dá para saber quando alguém desinstala, por isso use também “usaram nos últimos 30 dias”.</li>
+        <li><b>iPhone:</b> o app da tela inicial e o Safari contam como aparelhos separados.</li>
+        <li><b>Cidade:</b> aproximada, pela conexão de internet. Às vezes aparece a cidade da operadora.</li>
+        <li><b>Privacidade:</b> cada aparelho recebe um código aleatório. Não guardamos nome, telefone, e-mail nem IP.</li>
+        <li>Só conta quem usa o app. O site e o rádio FM não entram aqui. Os números de 7 e 30 dias são refeitos a cada 30 minutos; os de hoje, a cada 5 minutos.</li>
+      </ul>
+      <details class="nums"><summary>Trocar a senha do painel</summary>
+        <form class="pwd" id="pForm">
+          <input type="text" name="username" value="painel" autocomplete="username" hidden>
+          <label class="field"><span>Senha atual</span><input type="password" id="pAtual" autocomplete="current-password" required></label>
+          <label class="field"><span>Nova senha (mínimo de 8 caracteres)</span><input type="password" id="pNova" autocomplete="new-password" minlength="8" required></label>
+          <label class="field"><span>Repita a nova senha</span><input type="password" id="pConf" autocomplete="new-password" minlength="8" required></label>
+          <button class="btn" type="submit">Trocar senha</button>
+          <p class="msg" id="pMsg" role="alert"></p>
+        </form>
+      </details>
+    </footer>
+  </section>
+</main>
+<div class="tip" id="tip" hidden></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const NS = 'http://www.w3.org/2000/svg';
+  const nf = new Intl.NumberFormat('pt-BR');
+  const nf1 = new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 1 });
+  const OSN = { android: 'Android', ios: 'iPhone', desktop: 'Computador', other: 'Outros' };
+  const OSC = { android: 'var(--s1)', ios: 'var(--s2)', desktop: 'var(--s3)', other: 'var(--other)' };
+  const OSORDER = ['android', 'ios', 'desktop', 'other'];
+  const DOW = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
+  let data = null, timer = null, gateMode = 'login';
+
+  /* ---------- utilidades ---------- */
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const sv = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+  const hhmm = m => String(Math.floor(m / 60)).padStart(2, '0') + 'h' + String(m % 60).padStart(2, '0');
+  const hrs = v => v < 1 ? Math.round(v * 60) + ' min' : nf1.format(v) + ' h';
+  const dm = d => d.slice(8, 10) + '/' + d.slice(5, 7);
+  const dow = d => DOW[new Date(d + 'T12:00:00Z').getUTCDay()];
+  const place = (c, r) => c + (r ? ' · ' + r : '');
+  function scale(max, int){
+    max = Math.max(max, int ? 4 : 1);
+    const raw = max / 4, p = 10 ** Math.floor(Math.log10(raw)), m = raw / p;
+    let step = (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p;
+    if (int) step = Math.max(1, Math.round(step));
+    const top = Math.ceil(max / step) * step, ticks = [];
+    for (let v = 0; v <= top + 1e-9; v += step) ticks.push(Math.round(v * 100) / 100);
+    return { top, ticks };
+  }
+  const fmtTick = v => v >= 10000 ? nf1.format(v / 1000) + ' mil' : nf.format(v);
+  function barPath(x, y, w, h, r){
+    r = Math.min(r, w / 2, h);
+    return `M${x},${y + h}V${y + r}Q${x},${y} ${x + r},${y}H${x + w - r}Q${x + w},${y} ${x + w},${y + r}V${y + h}Z`;
+  }
+  function table(box, head, rows){
+    const t = el('table', 'tbl'), tr = el('tr');
+    head.forEach((h, i) => { const th = el('th', i ? 'n' : '', h); tr.appendChild(th); });
+    const th = el('thead'); th.appendChild(tr); t.appendChild(th);
+    const tb = el('tbody');
+    for (const r of rows){ const row = el('tr'); r.forEach((c, i) => row.appendChild(el('td', i ? 'n' : '', c))); tb.appendChild(row); }
+    t.appendChild(tb); box.replaceChildren(t);
+  }
+
+  /* ---------- dica (tooltip) ---------- */
+  const tip = $('tip');
+  function showTip(ev, title, rows){
+    tip.replaceChildren(el('div', 'tt', title));
+    for (const r of rows){
+      const row = el('div', 'row');
+      const k = el('span', 'ln'); k.style.background = r.color; row.appendChild(k);
+      row.appendChild(el('b', '', r.value)); if (r.label) row.appendChild(el('span', '', r.label));
+      tip.appendChild(row);
+    }
+    tip.hidden = false;
+    const w = tip.offsetWidth, h = tip.offsetHeight;
+    let x = ev.clientX + 14, y = ev.clientY - h - 10;
+    if (x + w > innerWidth - 8) x = ev.clientX - w - 14;
+    if (y < 8) y = ev.clientY + 16;
+    tip.style.left = Math.max(8, x) + 'px'; tip.style.top = y + 'px';
+  }
+  const hideTip = () => { tip.hidden = true; };
+
+  /* ---------- gráfico de linhas: hoje × ontem ---------- */
+  function lineChart(box, series, nowMin){
+    box.replaceChildren();
+    const W = Math.max(280, box.clientWidth), H = 230, m = { l: 34, r: 18, t: 14, b: 26 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b;
+    const max = Math.max(0, ...series.flatMap(s => s.pts.map(p => p[1])));
+    const { top, ticks } = scale(max, true);
+    const x = v => m.l + v / 1440 * pw, y = v => m.t + (1 - v / top) * ph;
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': 'Ouvintes pelo app ao longo do dia, hoje e ontem' }, box);
+    for (const t of ticks){
+      sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+      sv('text', { x: m.l - 8, y: y(t) + 4, 'text-anchor': 'end', class: 'axis' }, svg).textContent = fmtTick(t);
+    }
+    const step = W < 520 ? 360 : 180;
+    for (let h = 0; h <= 1440; h += step){
+      sv('text', { x: x(h), y: H - 6, 'text-anchor': h === 0 ? 'start' : h === 1440 ? 'end' : 'middle', class: 'axis' }, svg).textContent = h === 1440 ? '24h' : (h / 60) + 'h';
+    }
+    for (const s of [...series].reverse()){
+      let d = '', prev = null;
+      for (const [mn, v] of s.pts){ d += (prev == null || mn - prev > 16 ? 'M' : 'L') + x(mn).toFixed(1) + ',' + y(v).toFixed(1); prev = mn; }
+      if (d) sv('path', { d, fill: 'none', stroke: s.color, 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    }
+    const today = series[0].pts, last = today[today.length - 1];
+    if (last){
+      sv('circle', { cx: x(last[0]), cy: y(last[1]), r: 4, fill: series[0].color, stroke: 'var(--surface)', 'stroke-width': 2 }, svg);
+      const lx = x(last[0]), anchor = lx > W - 70 ? 'end' : 'start';
+      sv('text', { x: lx + (anchor === 'end' ? -8 : 8), y: y(last[1]) - 8, 'text-anchor': anchor, class: 'vlabel' }, svg).textContent = 'agora: ' + nf.format(last[1]);
+    }
+    // camada de leitura (cruz que acompanha o dedo/mouse)
+    const cross = sv('line', { y1: m.t, y2: H - m.b, stroke: 'var(--muted)', 'stroke-width': 1, visibility: 'hidden' }, svg);
+    const dots = series.map(s => sv('circle', { r: 4, fill: s.color, stroke: 'var(--surface)', 'stroke-width': 2, visibility: 'hidden' }, svg));
+    const maps = series.map(s => new Map(s.pts.map(p => [p[0] - p[0] % 5, p[1]])));
+    const hit = sv('rect', { x: m.l, y: m.t, width: pw, height: ph, fill: 'transparent' }, svg);
+    const move = ev => {
+      const r = svg.getBoundingClientRect();
+      let mn = Math.round(((ev.clientX - r.left) * (W / r.width) - m.l) / pw * 1440 / 5) * 5;
+      mn = Math.max(0, Math.min(1435, mn));
+      cross.setAttribute('x1', x(mn)); cross.setAttribute('x2', x(mn)); cross.setAttribute('visibility', 'visible');
+      const rows = [];
+      series.forEach((s, i) => {
+        const v = maps[i].get(mn);
+        if (v == null){ dots[i].setAttribute('visibility', 'hidden'); return; }
+        dots[i].setAttribute('cx', x(mn)); dots[i].setAttribute('cy', y(v)); dots[i].setAttribute('visibility', 'visible');
+        rows.push({ color: s.color, value: nf.format(v), label: s.name });
+      });
+      if (!rows.length) rows.push({ color: 'transparent', value: '—', label: 'sem registro' });
+      showTip(ev, hhmm(mn), rows);
+    };
+    const leave = () => { cross.setAttribute('visibility', 'hidden'); dots.forEach(d => d.setAttribute('visibility', 'hidden')); hideTip(); };
+    hit.addEventListener('pointermove', move); hit.addEventListener('pointerdown', move); hit.addEventListener('pointerleave', leave);
+  }
+
+  /* ---------- gráfico de colunas ---------- */
+  function columns(box, items, o = {}){
+    box.replaceChildren();
+    if (!items.some(i => i.value > 0)){ box.appendChild(el('div', 'empty', o.empty || 'Ainda sem dados neste período.')); return; }
+    const W = Math.max(280, box.clientWidth), H = o.height || 190, m = { l: 34, r: 8, t: 18, b: 26 };
+    const pw = W - m.l - m.r, ph = H - m.t - m.b, n = items.length, band = pw / n;
+    const bw = Math.max(3, Math.min(24, band - 2));
+    const max = Math.max(...items.map(i => i.value));
+    const { top, ticks } = scale(max, o.int !== false);
+    const y = v => m.t + (1 - v / top) * ph;
+    const svg = sv('svg', { viewBox: `0 0 ${W} ${H}`, height: H, role: 'img', 'aria-label': o.aria || '' }, box);
+    for (const t of ticks){
+      sv('line', { x1: m.l, x2: W - m.r, y1: y(t), y2: y(t), stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+      sv('text', { x: m.l - 8, y: y(t) + 4, 'text-anchor': 'end', class: 'axis' }, svg).textContent = o.int === false ? nf1.format(t) : fmtTick(t);
+    }
+    const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(pw / (o.labelW || 46)))));
+    let maxI = items.findIndex(i => i.value === max);
+    items.forEach((it, i) => {
+      const cx = m.l + band * i + band / 2;
+      if (it.value > 0){
+        const bar = sv('path', { d: barPath(cx - bw / 2, y(it.value), bw, y(0) - y(it.value), 4), fill: o.color || 'var(--s1)' }, svg);
+        it._bar = bar;
+      }
+      if (i % every === 0 || (o.lastLabel && i === n - 1 && (n - 1) % every > every / 2)){
+        sv('text', { x: cx, y: H - 6, 'text-anchor': 'middle', class: 'axis' }, svg).textContent = it.short;
+      }
+      const hit = sv('rect', { x: m.l + band * i, y: m.t, width: band, height: ph, fill: 'transparent' }, svg);
+      const show = ev => { if (it._bar) it._bar.setAttribute('opacity', '.75'); showTip(ev, it.label, [{ color: o.color || 'var(--s1)', value: it.text, label: o.unit || '' }]); };
+      hit.addEventListener('pointermove', show); hit.addEventListener('pointerdown', show);
+      hit.addEventListener('pointerleave', () => { if (it._bar) it._bar.removeAttribute('opacity'); hideTip(); });
+    });
+    if (maxI >= 0){
+      const cx = m.l + band * maxI + band / 2;
+      sv('text', { x: Math.min(W - 14, Math.max(m.l + 10, cx)), y: y(max) - 6, 'text-anchor': 'middle', class: 'vlabel' }, svg).textContent = items[maxI].text;
+    }
+  }
+
+  /* ---------- barras deitadas (listas) ---------- */
+  function hbars(box, rows, color, empty){
+    box.replaceChildren();
+    if (!rows.length){ box.appendChild(el('div', 'empty', empty)); return; }
+    const max = Math.max(...rows.map(r => r.value), 1e-9);
+    for (const r of rows){
+      const row = el('div', 'hb');
+      const l = el('div', 'l', r.label); if (r.sub) l.appendChild(el('small', '', r.sub)); l.title = r.label + (r.sub ? ' ' + r.sub : '');
+      const t = el('div', 't'), f = el('i'); f.style.width = Math.max(1, r.value / max * 100) + '%'; f.style.background = color; t.appendChild(f);
+      const v = el('div', 'v', r.text); if (r.extra) v.appendChild(el('small', '', r.extra));
+      row.append(l, t, v); box.appendChild(row);
+    }
+  }
+
+  function segBar(bar, leg, parts, unitLabel){
+    bar.replaceChildren(); leg.replaceChildren();
+    const tot = parts.reduce((s, p) => s + p.n, 0);
+    for (const p of parts){
+      if (tot && p.n){ const i = el('i'); i.style.flexGrow = p.n; i.style.background = p.color; bar.appendChild(i); }
+      const li = el('li'), sw = el('span', 'sw'); sw.style.background = p.color;
+      li.append(sw, document.createTextNode(p.label + ' '), el('b', '', nf.format(p.n)));
+      if (tot) li.appendChild(document.createTextNode(' (' + Math.round(p.n / tot * 100) + '%)'));
+      leg.appendChild(li);
+    }
+    bar.setAttribute('aria-label', parts.map(p => p.label + ': ' + p.n + ' ' + unitLabel).join(', '));
+  }
+
+  /* ---------- montagem do painel ---------- */
+  function render(){
+    if (!data) return;
+    const { live, light: L, heavy: H } = data;
+
+    $('liveN').textContent = nf.format(live.total);
+    const liveParts = OSORDER.filter(k => k !== 'other' || live.os.other).map(k => ({ label: OSN[k], n: live.os[k], color: OSC[k] }));
+    segBar($('liveSeg'), $('liveLeg'), liveParts, 'ouvindo');
+    const sub = [];
+    if (L.peak && L.peak.n) sub.push('Pico de hoje: ' + nf.format(L.peak.n) + ' às ' + hhmm(L.peak.min));
+    if (live.total) sub.push(nf.format(live.mode.app) + ' no app instalado · ' + nf.format(live.mode.web) + ' no navegador');
+    $('liveSub').textContent = sub.join(' · ') || 'Ninguém ouvindo pelo app neste momento.';
+
+    $('tInst').textContent = nf.format(L.installs.total);
+    $('tInstD').replaceChildren(el('b', '', '+' + nf.format(L.installs.today)), document.createTextNode(' hoje · '), el('b', '', '+' + nf.format(L.installs.d7)), document.createTextNode(' em 7 dias'));
+    $('tAct').textContent = nf.format(L.activeToday);
+    $('tActD').replaceChildren(document.createTextNode('7 dias: '), el('b', '', nf.format(H.active7)), document.createTextNode(' · 30 dias: '), el('b', '', nf.format(H.active30)));
+    $('tHrs').textContent = hrs(L.hoursToday);
+    $('tHrsD').replaceChildren(el('b', '', nf.format(L.sessionsToday)), document.createTextNode(L.sessionsToday === 1 ? ' vez que deram play hoje' : ' vezes que deram play hoje'));
+    $('tPush').textContent = nf.format(H.totals.push);
+    $('tPushD').replaceChildren(document.createTextNode('de '), el('b', '', nf.format(H.totals.devices)), document.createTextNode(' aparelhos que já usaram o app'));
+
+    // hoje × ontem
+    const todayPts = L.series.today.slice();
+    if (data.nowMin != null){ const lastT = todayPts.length ? todayPts[todayPts.length - 1][0] : -1; if (data.nowMin > lastT) todayPts.push([data.nowMin, live.total]); }
+    lineChart($('cDay'), [
+      { name: 'hoje', color: 'var(--s1)', pts: todayPts },
+      { name: 'ontem', color: 'var(--cmp)', pts: L.series.yesterday },
+    ], data.nowMin);
+    const ym = new Map(L.series.yesterday.map(p => [p[0], p[1]]));
+    const tm = new Map(todayPts.map(p => [p[0] - p[0] % 5, p[1]]));
+    const hourRows = [];
+    for (let h = 0; h < 24; h++){
+      const tv = [], yv = [];
+      for (let k = 0; k < 60; k += 5){ const mn = h * 60 + k; if (tm.has(mn)) tv.push(tm.get(mn)); if (ym.has(mn)) yv.push(ym.get(mn)); }
+      if (tv.length || yv.length) hourRows.push([String(h).padStart(2, '0') + 'h', tv.length ? nf.format(Math.max(...tv)) : '—', yv.length ? nf.format(Math.max(...yv)) : '—']);
+    }
+    table($('tDay'), ['Horário', 'Máximo hoje', 'Máximo ontem'], hourRows);
+
+    // agora: cidades e programas
+    hbars($('liveCities'), live.cities.map(c => ({ label: c.city, sub: c.region, value: c.n, text: nf.format(c.n) })), 'var(--s1)', 'Ninguém ouvindo pelo app neste momento.');
+    hbars($('liveProgs'), live.programs.map(p => ({ label: p.program, value: p.n, text: nf.format(p.n) })), 'var(--s1)', '—');
+
+    // aparelhos
+    const inst = Object.fromEntries(H.osInstalled.map(r => [r.os, r.n]));
+    segBar($('instSeg'), $('instLeg'), OSORDER.filter(k => k !== 'other' || inst.other).map(k => ({ label: OSN[k], n: inst[k] || 0, color: OSC[k] })), 'aparelhos');
+    const used = H.os30.reduce((a, r) => { a.n += r.n; a.inst += r.inst; return a; }, { n: 0, inst: 0 });
+    hbars($('useMode'), [
+      { label: 'Com o app instalado', value: used.inst, text: nf.format(used.inst) },
+      { label: 'Só pelo navegador', value: used.n - used.inst, text: nf.format(used.n - used.inst) },
+      ...OSORDER.map(k => { const r = H.os30.find(x => x.os === k); return r ? { label: OSN[k], value: r.n, text: nf.format(r.n), extra: nf.format(r.inst) + ' inst.' } : null; }).filter(Boolean),
+    ], 'var(--s1)', 'Ainda sem dados.');
+
+    // 30 dias
+    const dItems = key => H.days.map(d => ({ label: dow(d.d) + ', ' + dm(d.d), short: dm(d.d), value: d[key], text: nf.format(d[key]) }));
+    columns($('cInst'), dItems('installs'), { aria: 'Instalações por dia nos últimos 30 dias', unit: 'instalações', empty: 'Nenhuma instalação registrada ainda.', labelW: 44, lastLabel: true });
+    columns($('cAct'), dItems('active'), { aria: 'Aparelhos que usaram o app por dia nos últimos 30 dias', unit: 'aparelhos', empty: 'Ainda sem uso registrado.', labelW: 44, lastLabel: true });
+    const rev = H.days.slice().reverse();
+    table($('tInstT'), ['Dia', 'Instalações'], rev.map(d => [dow(d.d) + ', ' + dm(d.d), nf.format(d.installs)]));
+    table($('tActT'), ['Dia', 'Aparelhos', 'Tempo ouvido', 'Pico'], rev.map(d => [dow(d.d) + ', ' + dm(d.d), nf.format(d.active), hrs(d.hours), nf.format(d.peak)]));
+
+    // horários
+    columns($('cHour'), H.hours.map(h => ({ label: String(h.h).padStart(2, '0') + 'h às ' + String((h.h + 1) % 24).padStart(2, '0') + 'h', short: h.h % 3 ? '' : h.h + 'h', value: h.avg, text: nf1.format(h.avg) })),
+      { aria: 'Média de ouvintes por horário nos últimos 7 dias', unit: 'ouvintes em média', int: false, labelW: 22, empty: 'Ainda sem ouvintes registrados.' });
+    table($('tHour'), ['Horário', 'Média', 'Máximo'], H.hours.map(h => [String(h.h).padStart(2, '0') + 'h', nf1.format(h.avg), nf.format(h.peak)]));
+
+    hbars($('progs'), H.programs.map(p => ({ label: p.program, value: p.hours, text: hrs(p.hours) })), 'var(--s1)', 'Ainda sem dados de programas.');
+    hbars($('cities'), H.cities.map(c => ({ label: c.city, sub: c.region, value: c.n, text: nf.format(c.n), extra: nf.format(c.inst) + ' com app' })), 'var(--s1)', 'Ainda sem cidades registradas.');
+
+    const t = new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit', second: '2-digit' }).format(new Date(data.now * 1000));
+    $('meta').textContent = 'Atualizado às ' + t;
+  }
+
+  /* ---------- dados e login ---------- */
+  async function call(path, body){
+    const r = await fetch(path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), credentials: 'same-origin' } : { cache: 'no-store', credentials: 'same-origin' });
+    let j = {}; try { j = await r.json(); } catch {}
+    return { ok: r.ok, status: r.status, j };
+  }
+  async function load(){
+    $('app').classList.add('stale');
+    let res;
+    try { res = await call('/api/resumo'); } catch { res = { ok: false, status: 0, j: {} }; }
+    $('app').classList.remove('stale');
+    if (res.status === 401) return gate(res.j.need === 'setup' ? 'setup' : 'login');
+    if (!res.ok){ $('err').hidden = !data; if (!data) gate('login', 'Não foi possível carregar o painel agora. Tente de novo em instantes.'); return; }
+    $('err').hidden = true;
+    data = res.j;
+    $('gate').hidden = true; $('app').hidden = false; $('sair').hidden = false;
+    render();
+    schedule();
+  }
+  function schedule(){ clearTimeout(timer); if (!document.hidden && data) timer = setTimeout(load, 20000); }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && data) load(); else clearTimeout(timer); });
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(render, 150); });
+
+  function gate(mode, msg){
+    gateMode = mode; data = null; clearTimeout(timer);
+    $('app').hidden = true; $('sair').hidden = true; $('gate').hidden = false; $('meta').textContent = '';
+    const setup = mode === 'setup';
+    $('gTitle').textContent = setup ? 'Crie a senha do painel' : 'Entrar no painel';
+    $('gDesc').textContent = setup ? 'Primeiro acesso: escolha uma senha com pelo menos 8 caracteres. Ela vale para todos que forem ver o painel.' : 'Digite a senha do painel de dados do app.';
+    $('fSenha').hidden = setup; $('senha').required = !setup;
+    $('fNova').hidden = !setup; $('fConf').hidden = !setup; $('nova').required = setup; $('conf').required = setup;
+    $('gBtn').textContent = setup ? 'Criar senha e entrar' : 'Entrar';
+    $('gMsg').textContent = msg || '';
+    (setup ? $('nova') : $('senha')).focus();
+  }
+  $('gForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const msg = $('gMsg'); msg.textContent = '';
+    let res;
+    $('gBtn').disabled = true;
+    try {
+      if (gateMode === 'setup'){
+        if ($('nova').value.length < 8){ msg.textContent = 'Use pelo menos 8 caracteres.'; return; }
+        if ($('nova').value !== $('conf').value){ msg.textContent = 'As duas senhas não são iguais.'; return; }
+        res = await call('/api/setup', { senha: $('nova').value });
+      } else {
+        res = await call('/api/login', { senha: $('senha').value });
+      }
+      if (res.ok){ $('senha').value = $('nova').value = $('conf').value = ''; await load(); }
+      else if (res.status === 409) gate('login', res.j.erro);
+      else msg.textContent = res.j.erro || 'Não deu certo. Tente de novo.';
+    } catch { msg.textContent = 'Sem conexão. Tente de novo.'; }
+    finally { $('gBtn').disabled = false; }
+  });
+  $('sair').addEventListener('click', async () => { try { await call('/api/sair', {}); } catch {} gate('login'); });
+  $('pForm').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const msg = $('pMsg'); msg.className = 'msg'; msg.textContent = '';
+    if ($('pNova').value !== $('pConf').value){ msg.textContent = 'As duas senhas novas não são iguais.'; return; }
+    const res = await call('/api/senha', { atual: $('pAtual').value, nova: $('pNova').value }).catch(() => ({ ok: false, j: {} }));
+    if (res.ok){ msg.className = 'msg ok'; msg.textContent = 'Senha trocada. Quem estava com o painel aberto em outro aparelho vai precisar entrar de novo.'; $('pAtual').value = $('pNova').value = $('pConf').value = ''; }
+    else msg.textContent = res.j.erro || 'Não deu certo. Tente de novo.';
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
